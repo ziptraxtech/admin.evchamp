@@ -1,0 +1,17 @@
+# dependencies / build
+node_modules/
+dist/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+
+# secrets & local config
+.env
+.env.local
+
+# drizzle lock
+backend/drizzle/meta/_journal.json.lock
+
+# misc
+*.log
+.DS_Store

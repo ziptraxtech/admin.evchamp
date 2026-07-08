@@ -1,0 +1,40 @@
+{
+  "name": "evchamp-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "EvChamp Pay backend — OCPP CSMS + payment/QR API on NeonDB",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "seed": "tsx src/dev/seed.ts",
+    "renumber": "tsx src/dev/renumber.ts",
+    "fake-charger": "tsx src/dev/fake-charger.ts",
+    "create-cpo": "tsx src/dev/create-cpo.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.38.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.13.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "@types/ws": "^8.5.13",
+    "drizzle-kit": "^0.30.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
