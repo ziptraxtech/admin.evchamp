@@ -13,10 +13,21 @@ import * as paymentsSvc from '../services/payments.js';
 export function startApiServer() {
   const app = express();
 
-  // CORS — the customer & admin sites run on different origins (and via file:// in dev),
-  // so allow cross-origin API calls. Tighten to the real domains in production.
+  // CORS — the customer & admin sites run on different origins.
+  // Set CORS_ORIGINS to a comma-separated allowlist in production
+  // (e.g. "https://evchampay.vercel.app,https://admin-evchamp.vercel.app").
+  // Unset / "*" allows any origin (dev default).
+  const allowed = (process.env.CORS_ORIGINS ?? '*')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const allowAny = allowed.includes('*');
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.header('origin');
+    if (allowAny) {
+      res.header('Access-Control-Allow-Origin', '*');
+    } else if (origin && allowed.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Vary', 'Origin');
+    }
     res.header('Access-Control-Allow-Headers', 'content-type, authorization');
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
     if (req.method === 'OPTIONS') return res.sendStatus(204);

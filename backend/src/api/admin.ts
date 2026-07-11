@@ -6,6 +6,7 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { chargers, connectors, priceGroups, payments, rfidTags, stations, chargingSessions } from '../db/schema.js';
 import * as registry from '../ocpp/registry.js';
+import type { CpoTokenPayload } from './auth.js';
 
 export const adminRouter = Router();
 
@@ -30,7 +31,7 @@ async function orgConnectorIds(orgId: string): Promise<string[]> {
   return rows.map(c => c.id);
 }
 
-const cpo = (req: any) => req.cpo as { orgId: string };
+const cpo = (req: any) => req.cpo as CpoTokenPayload;
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
