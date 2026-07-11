@@ -3,7 +3,7 @@ const ADMIN_BASE = API_BASE + '/admin';
 
 // TEMP: login disabled while there's no deployed backend to authenticate against.
 // Flip to `false` to restore the login wall (and re-enable the 401 → login redirect).
-export const AUTH_DISABLED = true;
+export const AUTH_DISABLED = false;
 
 function getToken(): string {
   if (typeof window === 'undefined') return '';
