@@ -9,6 +9,7 @@ interface Charger {
   chargerKind: string; connectors: number; isPublic: boolean;
   online: boolean; status: string; lastHeartbeat?: string;
 }
+interface Station { id: string; name: string }
 
 const pill = (s: string) => {
   const MAP: Record<string, string> = { online:'green', offline:'grey', available:'green', unavailable:'grey', Public:'blue', Private:'grey', AC:'blue', DC:'purple' };
@@ -19,22 +20,34 @@ const fmtTime = (t?: string) => t ? new Date(t).toLocaleString('en-IN', { day: '
 
 export default function ChargersView({ onOpenCharger }: { onOpenCharger: (id: string) => void }) {
   const [chargers, setChargers] = useState<Charger[]>([]);
+  const [stations, setStations] = useState<Station[]>([]);
   const [search, setSearch] = useState('');
   const [err, setErr] = useState(false);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ name: '', kind: 'AC', isPublic: true });
+  const [form, setForm] = useState({ name: '', kind: 'AC', isPublic: true, stationId: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
-    try { setChargers(await adminGet<Charger[]>('/chargers')); setErr(false); }
-    catch { setErr(true); }
+    try {
+      const [ch, st] = await Promise.all([
+        adminGet<Charger[]>('/chargers'),
+        adminGet<Station[]>('/stations'),
+      ]);
+      setChargers(ch); setStations(st); setErr(false);
+    } catch { setErr(true); }
+  }
+
+  function openAdd() {
+    setForm({ name: '', kind: 'AC', isPublic: true, stationId: stations[0]?.id || '' });
+    setModal(true);
   }
 
   async function create() {
+    if (!form.stationId) { alert('Pick a station for this charger.'); return; }
     setSaving(true);
-    const r = await adminSend('/chargers', 'POST', { name: form.name.trim() || null, chargerKind: form.kind, isPublic: form.isPublic });
+    const r = await adminSend('/chargers', 'POST', { name: form.name.trim() || null, chargerKind: form.kind, isPublic: form.isPublic, stationId: form.stationId });
     setSaving(false);
     if (r.ok) { setModal(false); alert(`Charger ${r.body.chargeboxId} created. Configure the physical device to connect with this ID.`); load(); }
     else if (r.body.error === 'need a station and price group first') { setModal(false); alert('Setup needed: create a Station and a Price Group first, then add chargers.'); }
@@ -48,7 +61,7 @@ export default function ChargersView({ onOpenCharger }: { onOpenCharger: (id: st
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>Manage and monitor your charging infrastructure.</p>
-        <button onClick={() => setModal(true)} className="btn-primary">+ Add Charger</button>
+        <button onClick={openAdd} className="btn-primary">+ Add Charger</button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 16 }}>
@@ -93,6 +106,11 @@ export default function ChargersView({ onOpenCharger }: { onOpenCharger: (id: st
         <Modal title="Add Charger" onClose={() => setModal(false)}>
           <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 20px' }}>Chargebox ID is auto-assigned (next free 0001–9999). Configure the physical charger to connect with that ID over OCPP.</p>
           <div className="section-divider">Charger Details</div>
+          <label className="lbl">Station</label>
+          <select value={form.stationId} onChange={e => setForm(f => ({ ...f, stationId: e.target.value }))} className="inp" style={{ marginBottom: 12 }}>
+            {stations.length === 0 && <option value="">No stations — create one first</option>}
+            {stations.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
           <label className="lbl">Charger Name</label>
           <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="inp" style={{ marginBottom: 12 }} placeholder="e.g. Andheri Hub – Bay 1" />
           <label className="lbl">Charger Type</label>

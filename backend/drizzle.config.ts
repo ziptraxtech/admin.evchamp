@@ -1,4 +1,7 @@
-import './src/env.js';
+// Load env directly here (not via src/env.js) — drizzle-kit's config loader
+// doesn't resolve the .js→.ts path mapping the app runtime uses.
+import { config } from 'dotenv';
+config({ path: ['.env.local', '.env'] });
 import { defineConfig } from 'drizzle-kit';
 
 // Migrations run against the DIRECT connection (not the pooled/PgBouncer one),

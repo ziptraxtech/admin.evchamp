@@ -2,7 +2,7 @@
 // Every query is scoped to req.cpo.orgId so CPOs only see their own data.
 
 import { Router } from 'express';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { chargers, connectors, priceGroups, payments, rfidTags, stations, chargingSessions } from '../db/schema.js';
 import * as registry from '../ocpp/registry.js';
@@ -291,14 +291,18 @@ adminRouter.get('/transactions', async (req, res) => {
 
 adminRouter.post('/chargers', async (req, res) => {
   const orgId = cpo(req).orgId;
-  const station = await db.query.stations.findFirst({ where: eq(stations.orgId, orgId) });
+  const { name, chargerKind, isPublic, stationId } = req.body ?? {};
+
+  // Use the chosen station (validated to this org); fall back to the first one.
+  const station = stationId
+    ? await db.query.stations.findFirst({ where: and(eq(stations.id, stationId), eq(stations.orgId, orgId)) })
+    : await db.query.stations.findFirst({ where: eq(stations.orgId, orgId) });
   const pg = await db.query.priceGroups.findFirst({ where: eq(priceGroups.orgId, orgId) });
+  if (stationId && !station) return res.status(400).json({ error: 'station not found' });
   if (!station || !pg) return res.status(400).json({ error: 'need a station and price group first' });
 
   const id = await nextChargeboxId();
   if (!id) return res.status(400).json({ error: 'id range full (9999)' });
-
-  const { name, chargerKind, isPublic } = req.body ?? {};
   const [charger] = await db.insert(chargers).values({
     chargeboxId: id, name: name || `Charger ${id}`, stationId: station.id, status: 'offline',
     chargerKind: chargerKind === 'DC' ? 'DC' : 'AC', isPublic: isPublic !== false,
