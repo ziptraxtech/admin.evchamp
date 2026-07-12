@@ -12,13 +12,14 @@ import RfidView from '@/components/views/RfidView';
 import PricingView from '@/components/views/PricingView';
 import TransactionsView from '@/components/views/TransactionsView';
 import SettingsView from '@/components/views/SettingsView';
+import UsersView from '@/components/views/UsersView';
 import type { View } from '@/lib/types';
 import { AUTH_DISABLED } from '@/lib/api';
 
 const TITLES: Record<View, string> = {
   dashboard: 'Dashboard', transactions: 'Transactions', stations: 'Stations',
   chargers: 'Charge Points', 'charger-detail': 'Charger Detail',
-  rfid: 'RFID Tags', pricing: 'Price Groups', settings: 'Settings',
+  rfid: 'RFID Tags', pricing: 'Price Groups', users: 'Users', settings: 'Settings',
 };
 
 export default function DashboardPage() {
@@ -79,6 +80,7 @@ export default function DashboardPage() {
           {view === 'rfid' && <RfidView />}
           {view === 'pricing' && <PricingView onGatewayLoaded={setGateway} />}
           {view === 'transactions' && <TransactionsView />}
+          {view === 'users' && <UsersView />}
           {view === 'settings' && <SettingsView gateway={gateway} />}
         </div>
       </main>

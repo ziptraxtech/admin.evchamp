@@ -3,8 +3,9 @@
 
 import { Router } from 'express';
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 import { db } from '../db/index.js';
-import { chargers, connectors, priceGroups, payments, rfidTags, stations, chargingSessions } from '../db/schema.js';
+import { chargers, connectors, priceGroups, payments, rfidTags, stations, chargingSessions, loginCpo } from '../db/schema.js';
 import * as registry from '../ocpp/registry.js';
 import type { CpoTokenPayload } from './auth.js';
 
@@ -312,6 +313,48 @@ adminRouter.post('/chargers', async (req, res) => {
     { chargerId: charger.id, connectorNo: 2, name: 'CN2', connectorType: 'Type 2', powerKw: '7.40', voltageV: '230.00', priceGroupId: pg.id, status: 'unavailable' },
   ]);
   res.json({ ok: true, chargeboxId: id });
+});
+
+// ── Users (operator logins) ──────────────────────────────────────────────────
+// All scoped to the caller's org: a CPO can only see/manage logins in its own org.
+
+adminRouter.get('/users', async (req, res) => {
+  const orgId = cpo(req).orgId;
+  const rows = await db.query.loginCpo.findMany({ where: eq(loginCpo.orgId, orgId) });
+  res.json(rows.map(u => ({ userId: u.userId, companyName: u.companyName, createdAt: (u as any).createdAt ?? null })));
+});
+
+adminRouter.post('/users', async (req, res) => {
+  const { orgId, companyName } = cpo(req);
+  const userId = String(req.body?.userId ?? '').trim();
+  const password = String(req.body?.password ?? '');
+  if (!userId || !password) return res.status(400).json({ error: 'userId and password required' });
+  if (password.length < 6) return res.status(400).json({ error: 'password must be at least 6 characters' });
+  const existing = await db.query.loginCpo.findFirst({ where: eq(loginCpo.userId, userId) });
+  if (existing) return res.status(400).json({ error: 'userId already exists' });
+  const passwordHash = await bcrypt.hash(password, 12);
+  await db.insert(loginCpo).values({ userId, passwordHash, companyName, orgId });
+  res.json({ ok: true, userId });
+});
+
+adminRouter.put('/users/:userId/password', async (req, res) => {
+  const orgId = cpo(req).orgId;
+  const password = String(req.body?.password ?? '');
+  if (password.length < 6) return res.status(400).json({ error: 'password must be at least 6 characters' });
+  const u = await db.query.loginCpo.findFirst({ where: and(eq(loginCpo.userId, req.params.userId), eq(loginCpo.orgId, orgId)) });
+  if (!u) return res.status(404).json({ error: 'user not found' });
+  const passwordHash = await bcrypt.hash(password, 12);
+  await db.update(loginCpo).set({ passwordHash }).where(eq(loginCpo.userId, req.params.userId));
+  res.json({ ok: true });
+});
+
+adminRouter.delete('/users/:userId', async (req, res) => {
+  const { orgId, userId: me } = cpo(req);
+  if (req.params.userId === me) return res.status(400).json({ error: 'cannot delete your own login' });
+  const u = await db.query.loginCpo.findFirst({ where: and(eq(loginCpo.userId, req.params.userId), eq(loginCpo.orgId, orgId)) });
+  if (!u) return res.status(404).json({ error: 'user not found' });
+  await db.delete(loginCpo).where(eq(loginCpo.userId, req.params.userId));
+  res.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

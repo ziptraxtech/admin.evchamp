@@ -6,4 +6,5 @@ export type View =
   | 'charger-detail'
   | 'rfid'
   | 'pricing'
+  | 'users'
   | 'settings';

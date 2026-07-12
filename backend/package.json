@@ -14,7 +14,8 @@
     "seed": "tsx src/dev/seed.ts",
     "renumber": "tsx src/dev/renumber.ts",
     "fake-charger": "tsx src/dev/fake-charger.ts",
-    "create-cpo": "tsx src/dev/create-cpo.ts"
+    "create-cpo": "tsx src/dev/create-cpo.ts",
+    "reset-password": "tsx src/dev/reset-password.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
